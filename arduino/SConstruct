@@ -1,0 +1,56 @@
+from itertools import chain
+
+# Set up libraries build env
+# Libs include directories
+libs_include = list(chain.from_iterable([d] + d.glob("include") for d in Glob("lib/*")))
+env_libs = Environment(
+	CPPPATH=libs_include,
+	CXXFLAGS=[
+		"-g",
+		"-Wall",
+		"-Wextra",
+		"-pthread",
+		"-Wno-missing-field-initializers",
+		"-Wno-missing-braces",
+		"-Wno-unused-command-line-argument",
+	]
+)
+# Compile external libraries
+gtest = env_libs.Library("gtest", Glob("lib/googletest/src/*.cc"))
+gmock = env_libs.Library("gmock", Glob("lib/gmock/src/*.cc"))
+
+# Set up tests build env
+libs_include.append("lib/arduino-mock/include/arduino-mock")
+libs_include.append("./")
+env_tests = Environment(
+	CPPPATH=libs_include,
+	CXXFLAGS=[
+		"-g",
+		"-Wall",
+		"-Wextra",
+		"-pthread",
+	]
+)
+# Compile arduino mock library as an Object
+arduino_mock = env_tests.Object(
+		"lib/arduino-mock/src/ArduinoMockAll.cc",
+		LIBS=["gtest", "gmock"],
+		LIBPATH="."
+)
+# Firmware sources
+firmware_src = Glob("src/*.cpp") + Glob("src/*.ino")
+# Add test sources
+test_src = Glob("test/*.cpp") + Glob("test/*.cc")
+test_programs = []
+# Compile tests
+for test in test_src:
+	test_programs += env_tests.Program(
+		str(test).split(".")[0] + ".out",  # executable prefixed as .out
+		firmware_src + [test, arduino_mock],
+		LIBS=["gtest", "gmock"],
+		LIBPATH="."
+	)
+# Run tests
+for test in test_programs:
+	cmd = env_tests.Command(str(test) + ".target", str(test), "./$SOURCE")
+	Depends(cmd, test)
