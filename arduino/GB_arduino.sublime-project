@@ -1,0 +1,22 @@
+{
+	"folders":
+	[
+		{
+			"path": "/Users/octavi/projects/GBPrinter"
+		}
+	],
+	"build_systems": [
+		{
+			"name": "Arduino test build",
+			"cmd": ["scons"],
+			"working_dir": "/Users/octavi/projects/GBPrinter/arduino",
+			"path": "/usr/local/bin"
+		},
+		{
+			"name": "Arduino target build",
+			"cmd": ["/usr/local/bin/ino", "build"],
+			"working_dir": "/Users/octavi/projects/GBPrinter/arduino",
+			"path": "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+		}
+	]
+}
