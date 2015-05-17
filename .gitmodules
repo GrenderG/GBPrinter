@@ -1,9 +1,12 @@
 [submodule "arduino/lib/arduino-mock"]
 	path = arduino/lib/arduino-mock
 	url = https://github.com/ikeyasu/arduino-mock.git
+        ignore = untracked
 [submodule "arduino/lib/gmock"]
 	path = arduino/lib/gmock
 	url = https://chromium.googlesource.com/external/gmock
+        ignore = untracked
 [submodule "arduino/lib/googletest"]
 	path = arduino/lib/googletest
 	url = https://chromium.googlesource.com/external/googletest
+        ignore = untracked
