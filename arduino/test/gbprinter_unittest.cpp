@@ -8,7 +8,7 @@
 using ::testing::Return;
 
 TEST(cbuffer, initialization) {
-	CBuffer cb = { .start = 1, .end= 1 };	
+	CBuffer cb = { .start = 0, .end= 0 };	
 	EXPECT_EQ(0u, cb.start);
 	EXPECT_EQ(0u, cb.end);
 }
