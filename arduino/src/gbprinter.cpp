@@ -1,6 +1,5 @@
 #include "gbprinter.h"
 
-
 byte CBRead(CBuffer* cb) {
 	byte b = cb->buffer[cb->start];
 	cb->start = ++cb->start % BUFFER_SIZE;
