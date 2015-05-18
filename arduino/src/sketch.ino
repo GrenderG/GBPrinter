@@ -4,7 +4,6 @@
 
 void setup()
 {
-	CBuffer cbuffer;
 	// CBInit(&cbuffer);
 
 }

@@ -8,13 +8,11 @@
 using ::testing::Return;
 
 TEST(cbuffer, initialization) {
-	CBuffer CBUFFER = { .start = 0, .end= 0 };
 	EXPECT_EQ(0u, CBUFFER.start);
 	EXPECT_EQ(0u, CBUFFER.end);
 }
 
 TEST(cbuffer, cbread) {
-	CBuffer CBUFFER = { .start = 0, .end= 0 };
 	CBUFFER.buffer[0] = 0x01;
 	CBUFFER.buffer[1] = 0x02;
 	// CBRead reads properly from buffer and advances start pointer
@@ -27,7 +25,6 @@ TEST(cbuffer, cbread) {
 }
 
 TEST(cbuffer, cbwrite) {
-	CBuffer CBUFFER = { .start = 0, .end= 0 };
 	// Check that write actually does it and advances buffer accordingly
 	CBWrite(&CBUFFER, 0x02);
 	CBWrite(&CBUFFER, 0x03);

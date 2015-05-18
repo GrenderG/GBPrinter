@@ -31,7 +31,7 @@ extern CBuffer CBUFFER;
  */
 uint8_t GBSendByte(uint8_t b);
 
-uint16_t GBSendPacket(uint8_t command, uint16_t size);
+uint16_t GBSendPacket(uint8_t command, uint16_t size, CBuffer* cb);
 
 // Game Boy Printer Commands
 #define GBC_INITIALIZE 0x01
