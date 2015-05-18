@@ -8,33 +8,35 @@
 using ::testing::Return;
 
 TEST(cbuffer, initialization) {
-	CBuffer cb = { .start = 0, .end= 0 };	
-	EXPECT_EQ(0u, cb.start);
-	EXPECT_EQ(0u, cb.end);
+	CBuffer CBUFFER = { .start = 0, .end= 0 };
+	EXPECT_EQ(0u, CBUFFER.start);
+	EXPECT_EQ(0u, CBUFFER.end);
 }
 
 TEST(cbuffer, cbread) {
-	CBuffer cb = { .start = 0, .end= 0 };
-	cb.buffer[0] = 0x01;
-	cb.buffer[1] = 0x02;
+	CBuffer CBUFFER = { .start = 0, .end= 0 };
+	CBUFFER.buffer[0] = 0x01;
+	CBUFFER.buffer[1] = 0x02;
 	// CBRead reads properly from buffer and advances start pointer
-	EXPECT_EQ(0x01, CBRead(&cb));
-	EXPECT_EQ(0x02, CBRead(&cb));
+	EXPECT_EQ(0x01, CBRead(&CBUFFER));
+	EXPECT_EQ(0x02, CBRead(&CBUFFER));
 	// CBRead loops over at the end of the buffer
-	cb.start = BUFFER_SIZE - 1;
-	CBRead(&cb);
-	EXPECT_EQ(0u, cb.start);
+	CBUFFER.start = BUFFER_SIZE - 1;
+	CBRead(&CBUFFER);
+	EXPECT_EQ(0u, CBUFFER.start);
 }
 
 TEST(cbuffer, cbwrite) {
-	CBuffer cb = { .start = 0, .end= 0 };
-	CBWrite(&cb, 0x02);
-	CBWrite(&cb, 0x03);
-	EXPECT_EQ(0x02, cb.buffer[0]);
-	EXPECT_EQ(0x03, cb.buffer[1]);
-	cb.end = BUFFER_SIZE -1;
-	CBWrite(&cb, 0x03);
-	CBWrite(&cb, 0x03);
-	EXPECT_EQ(0x03, cb.buffer[BUFFER_SIZE - 1]);
-	EXPECT_EQ(0x03, cb.buffer[0]);
+	CBuffer CBUFFER = { .start = 0, .end= 0 };
+	// Check that write actually does it and advances buffer accordingly
+	CBWrite(&CBUFFER, 0x02);
+	CBWrite(&CBUFFER, 0x03);
+	EXPECT_EQ(0x02, CBUFFER.buffer[0]);
+	EXPECT_EQ(0x03, CBUFFER.buffer[1]);
+	// Check that end loops over at the end of the bugger
+	CBUFFER.end = BUFFER_SIZE -1;
+	CBWrite(&CBUFFER, 0x03);
+	CBWrite(&CBUFFER, 0x03);
+	EXPECT_EQ(0x03, CBUFFER.buffer[BUFFER_SIZE - 1]);
+	EXPECT_EQ(0x03, CBUFFER.buffer[0]);
 }
