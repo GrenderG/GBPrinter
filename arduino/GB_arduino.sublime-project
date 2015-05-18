@@ -2,7 +2,32 @@
 	"folders":
 	[
 		{
-			"path": "/Users/octavi/projects/GBPrinter"
+			"path": "src",
+			"file_exclude_patterns": [
+				"*.o",
+				"*.a",
+				"*.out",
+				".sconsign.dblite"
+			]
+		},
+		{
+			"path": "test",
+			"file_exclude_patterns": [
+				"*.o",
+				"*.a",
+				"*.out",
+				".sconsign.dblite"
+			]
+		},
+		{
+			"path": ".",
+			"folder_exclude_patterns": ["*"],
+			"file_exclude_patterns": [
+				"*.o",
+				"*.a",
+				"*.out",
+				".sconsign.dblite"
+			]
 		}
 	],
 	"build_systems": [
