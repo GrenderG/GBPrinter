@@ -29,7 +29,8 @@ env_tests = Environment(
 		"-Wall",
 		"-Wextra",
 		"-pthread",
-	]
+	],
+	CPPDEFINES="TESTBUILD"
 )
 # Compile arduino mock library as an Object
 arduino_mock = env_tests.Object(
