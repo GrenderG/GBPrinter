@@ -3,15 +3,15 @@
 // Initialize global circular buffer
 CBuffer CBUFFER = { .start = 0, .end= 0 };
 
-byte CBRead(CBuffer* cb) {
-	byte b = cb->buffer[cb->start];
-	cb->start = ++cb->start % BUFFER_SIZE;
+byte CBRead() {
+	byte b = CBUFFER.buffer[CBUFFER.start];
+	CBUFFER.start = ++CBUFFER.start % BUFFER_SIZE;
 	return b;
 }
 
-void CBWrite(CBuffer* cb, byte b) {
-	cb->buffer[cb->end] = b;
-	cb->end = ++cb->end % BUFFER_SIZE;
+void CBWrite(byte b) {
+	CBUFFER.buffer[CBUFFER.end] = b;
+	CBUFFER.end = ++CBUFFER.end % BUFFER_SIZE;
 }
 
 uint8_t GBSendByte(uint8_t b) {
@@ -37,7 +37,7 @@ uint16_t GBSendPacket(uint8_t command, uint16_t size) {
 	// Send data
 	uint8_t b;
 	for (uint16_t i = 0; i < size; ++i) {
-		b = CBRead(&CBUFFER);
+		b = CBRead();
 		checksum += b;
 		GBSendByte(b);
 	}

@@ -18,9 +18,9 @@ typedef struct CBuffer{
 	uint16_t end;
 } CBuffer;
 
-uint8_t CBRead(CBuffer* cb);
+uint8_t CBRead();
 
-void CBWrite(CBuffer* cb, uint8_t b);
+void CBWrite(uint8_t b);
 
 // Declare CBuffer global variable
 extern CBuffer CBUFFER;
@@ -31,7 +31,7 @@ extern CBuffer CBUFFER;
  */
 uint8_t GBSendByte(uint8_t b);
 
-uint16_t GBSendPacket(uint8_t command, uint16_t size, CBuffer* cb);
+uint16_t GBSendPacket(uint8_t command, uint16_t size);
 
 // Game Boy Printer Commands
 #define GBC_INITIALIZE 0x01
