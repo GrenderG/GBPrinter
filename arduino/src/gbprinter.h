@@ -1,12 +1,11 @@
 #pragma once
 
 #include <Arduino.h>
-#include <Serial.h>
 
-// Game Boy Printer Signals
-#define GBS_CLOCK 8
-#define GBS_IN 9
-#define GBS_OUT 10
+// Game Boy Game Link Arduino Pinout
+#define GBP_CLOCK 8
+#define GBP_IN 9
+#define GBP_OUT 10
 #define DELAY_MS 20
 
 /*

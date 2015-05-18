@@ -1,7 +1,10 @@
 #include "gbprinter.h"
+#ifdef TESTBUILD
+	#include <Serial.h>
+#endif
 
 // Initialize global circular buffer
-CBuffer CBUFFER = { .start = 0, .end= 0 };
+CBuffer CBUFFER;
 
 void CBInit() {
 	CBUFFER.start = 0;
@@ -26,23 +29,23 @@ void CBWrite(byte b) {
 uint8_t GBSendByte(uint8_t b) {
 	// This will allow us to test GBSendPacket on test builds
 	#ifdef TESTBUILD
-	Serial.write(b);
+		Serial.write(b);
 	#endif
 	uint8_t reply = 0;
 	for (uint8_t bit_pos = 0; bit_pos < 8; ++bit_pos) {
 		reply <<= 1;
-		digitalWrite(GBS_CLOCK, 0); // Send clock signal
+		digitalWrite(GBP_CLOCK, 0); // Send clock signal
 
 		if ((b << bit_pos) & 0x80) {
-			digitalWrite(GBS_OUT, 1); // Write out to printer
+			digitalWrite(GBP_OUT, 1); // Write out to printer
 		}
 		else { 
-			digitalWrite(GBS_OUT, 0);
+			digitalWrite(GBP_OUT, 0);
 		}
 		delayMicroseconds(DELAY_MS);
-		digitalWrite(GBS_CLOCK, 1);
+		digitalWrite(GBP_CLOCK, 1);
 		
-		if (digitalRead(GBS_IN)){
+		if (digitalRead(GBP_IN)){
 		  reply |= 1;    // Fetch printer reply
 		}
 		
