@@ -15,6 +15,10 @@ void CBWrite(byte b) {
 }
 
 uint8_t GBSendByte(uint8_t b) {
+	// This will allow us to test GBSendPacket on test builds
+	#ifdef TESTBUILD
+	Serial.write(b);
+	#endif
 	b = 0x00;
 	return b;
 }

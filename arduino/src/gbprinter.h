@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
-
+#include <Serial.h>
 
 /*
  * Circular buffer implementation. Will serve as buffer to store image data received from Arduino
