@@ -3,6 +3,12 @@
 #include <Arduino.h>
 #include <Serial.h>
 
+// Game Boy Printer Signals
+#define GBS_CLOCK 8
+#define GBS_IN 9
+#define GBS_OUT 10
+#define DELAY_MS 20
+
 /*
  * Circular buffer implementation. Will serve as buffer to store image data received from Arduino
  * serial connection to computer

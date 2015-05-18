@@ -67,7 +67,7 @@ TEST(gbsendpacket, packetsize) {
 	releaseSerialMock();
 }
 
-TEST(gbsendpacket, gbc_initialize) {
+TEST(gbsendpacket, GBC_INITIALIZE) {
 	SerialMock* serialMock = serialMockInstance();
 	stringCapture c;
 
@@ -75,15 +75,60 @@ TEST(gbsendpacket, gbc_initialize) {
 		.WillRepeatedly(Invoke(&c, &stringCapture::captureUInt8));
 	GBSendPacket(GBC_INITIALIZE, 0x0000);
 	const char *receivedPacket = c.get().c_str();
+	// magic
 	EXPECT_EQ(0x88, (uint8_t) receivedPacket[0]);
 	EXPECT_EQ(0x33, (uint8_t) receivedPacket[1]);
+	// command
 	EXPECT_EQ(GBC_INITIALIZE, (uint8_t) receivedPacket[2]);
+	// compression
 	EXPECT_EQ(0x00, (uint8_t) receivedPacket[3]);
+	// size
 	EXPECT_EQ(0x00, (uint8_t) receivedPacket[4]);
 	EXPECT_EQ(0x00, (uint8_t) receivedPacket[5]);
+	// checksum
 	EXPECT_EQ(0x01, (uint8_t) receivedPacket[6]);
 	EXPECT_EQ(0x00, (uint8_t) receivedPacket[7]);
+	// gbp status
 	EXPECT_EQ(0x00, (uint8_t) receivedPacket[8]);
 	EXPECT_EQ(0x00, (uint8_t) receivedPacket[9]);
+	releaseSerialMock();
+}
+
+TEST(gbsendpacket, GBC_DATA) {
+	SerialMock* serialMock = serialMockInstance();
+	stringCapture c;
+	CBInit();
+	uint16_t dataSize = 4;
+	for (unsigned int i = 0; i < dataSize; ++i)
+	{
+		CBUFFER.buffer[i] = 0x02;
+	}
+
+	EXPECT_CALL(*serialMock, write(Matcher<uint8_t>(_)))
+		.WillRepeatedly(Invoke(&c, &stringCapture::captureUInt8));
+	GBSendPacket(GBC_DATA, dataSize);
+	const char *receivedPacket = c.get().c_str();
+	// magic
+	EXPECT_EQ(0x88, (uint8_t) receivedPacket[0]);
+	EXPECT_EQ(0x33, (uint8_t) receivedPacket[1]);
+	// command
+	EXPECT_EQ(GBC_DATA, (uint8_t) receivedPacket[2]);
+	// compression
+	EXPECT_EQ(0x00, (uint8_t) receivedPacket[3]);
+	// size
+	EXPECT_EQ(0x04, (uint8_t) receivedPacket[4]);
+	EXPECT_EQ(0x00, (uint8_t) receivedPacket[5]);
+	// data (dataSize bytes)
+	EXPECT_EQ(0x02, (uint8_t) receivedPacket[6]);
+	EXPECT_EQ(0x02, (uint8_t) receivedPacket[7]);
+	EXPECT_EQ(0x02, (uint8_t) receivedPacket[8]);
+	EXPECT_EQ(0x02, (uint8_t) receivedPacket[9]);
+	// checksum
+	EXPECT_EQ(0x10, (uint8_t) receivedPacket[10]);
+	EXPECT_EQ(0x00, (uint8_t) receivedPacket[11]);
+	// gbp status
+	EXPECT_EQ(0x00, (uint8_t) receivedPacket[12]);
+	EXPECT_EQ(0x00, (uint8_t) receivedPacket[13]);
+	
 	releaseSerialMock();
 }

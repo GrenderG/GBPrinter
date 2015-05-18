@@ -28,8 +28,30 @@ uint8_t GBSendByte(uint8_t b) {
 	#ifdef TESTBUILD
 	Serial.write(b);
 	#endif
-	b = 0x00;
-	return b;
+	uint8_t reply = 0;
+	for (uint8_t bit_pos = 0; bit_pos < 8; ++bit_pos) {
+		reply <<= 1;
+		digitalWrite(GBS_CLOCK, 0); // Send clock signal
+
+		if ((b << bit_pos) & 0x80) {
+			digitalWrite(GBS_OUT, 1); // Write out to printer
+		}
+		else { 
+			digitalWrite(GBS_OUT, 0);
+		}
+		delayMicroseconds(DELAY_MS);
+		digitalWrite(GBS_CLOCK, 1);
+		
+		if (digitalRead(GBS_IN)){
+		  reply |= 1;    // Fetch printer reply
+		}
+		
+		delayMicroseconds(DELAY_MS);
+	}
+
+	delayMicroseconds(DELAY_MS);
+
+	return reply;
 }
 
 uint16_t GBSendPacket(uint8_t command, uint16_t size) {
