@@ -3,6 +3,15 @@
 // Initialize global circular buffer
 CBuffer CBUFFER = { .start = 0, .end= 0 };
 
+void CBInit() {
+	CBUFFER.start = 0;
+	CBUFFER.end = 0;
+	for (unsigned int i = 0; i < BUFFER_SIZE; ++i)
+	{
+		CBUFFER.buffer[i] = 0u;
+	}
+}
+
 byte CBRead() {
 	byte b = CBUFFER.buffer[CBUFFER.start];
 	CBUFFER.start = ++CBUFFER.start % BUFFER_SIZE;

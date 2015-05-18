@@ -18,6 +18,8 @@ typedef struct CBuffer{
 	uint16_t end;
 } CBuffer;
 
+void CBInit();
+
 uint8_t CBRead();
 
 void CBWrite(uint8_t b);

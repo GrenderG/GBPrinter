@@ -45,6 +45,28 @@ TEST(cbuffer, cbwrite) {
 	EXPECT_EQ(0x03, CBUFFER.buffer[0]);
 }
 
+TEST(gbsendpacket, packetsize) {
+	SerialMock* serialMock = serialMockInstance();
+	stringCapture c;
+
+	EXPECT_CALL(*serialMock, write(Matcher<uint8_t>(_)))
+		.WillRepeatedly(Invoke(&c, &stringCapture::captureUInt8));
+	
+	GBSendPacket(GBC_INITIALIZE, 0x0000);
+	EXPECT_EQ(10u, c.get().length());
+	c.clear();
+
+	GBSendPacket(GBC_DATA, 0x0008);
+	EXPECT_EQ(18u, c.get().length());
+	c.clear();
+
+	GBSendPacket(GBC_DATA, 0x0280);
+	EXPECT_EQ(650u, c.get().length());
+	c.clear();
+
+	releaseSerialMock();
+}
+
 TEST(gbsendpacket, gbc_initialize) {
 	SerialMock* serialMock = serialMockInstance();
 	stringCapture c;
@@ -52,9 +74,16 @@ TEST(gbsendpacket, gbc_initialize) {
 	EXPECT_CALL(*serialMock, write(Matcher<uint8_t>(_)))
 		.WillRepeatedly(Invoke(&c, &stringCapture::captureUInt8));
 	GBSendPacket(GBC_INITIALIZE, 0x0000);
-	uint8_t expectedPacket[] = {0x88, 0x33, GBC_INITIALIZE, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00};
-	// const char *receivedPacket = c.get().c_str();
-	EXPECT_EQ(11u, c.get().length());
-	// EXPECT_EQ((uint8_t)c.get().c_str()[0], 0x88);
+	const char *receivedPacket = c.get().c_str();
+	EXPECT_EQ(0x88, (uint8_t) receivedPacket[0]);
+	EXPECT_EQ(0x33, (uint8_t) receivedPacket[1]);
+	EXPECT_EQ(GBC_INITIALIZE, (uint8_t) receivedPacket[2]);
+	EXPECT_EQ(0x00, (uint8_t) receivedPacket[3]);
+	EXPECT_EQ(0x00, (uint8_t) receivedPacket[4]);
+	EXPECT_EQ(0x00, (uint8_t) receivedPacket[5]);
+	EXPECT_EQ(0x01, (uint8_t) receivedPacket[6]);
+	EXPECT_EQ(0x00, (uint8_t) receivedPacket[7]);
+	EXPECT_EQ(0x00, (uint8_t) receivedPacket[8]);
+	EXPECT_EQ(0x00, (uint8_t) receivedPacket[9]);
 	releaseSerialMock();
 }
