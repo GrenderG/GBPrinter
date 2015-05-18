@@ -3,9 +3,16 @@
 
 #include "gtest/gtest.h"
 #include "arduino-mock/Arduino.h"
+#include "arduino-mock/Serial.h"
+#include "arduino-mock/serialHelper.h"
+
 #include "src/gbprinter.h"
 
+using ::testing::_;
 using ::testing::Return;
+using ::testing::Matcher;
+using ::testing::AtLeast;
+using ::testing::Invoke;
 
 TEST(cbuffer, initialization) {
 	EXPECT_EQ(0u, CBUFFER.start);
@@ -36,4 +43,18 @@ TEST(cbuffer, cbwrite) {
 	CBWrite(0x03);
 	EXPECT_EQ(0x03, CBUFFER.buffer[BUFFER_SIZE - 1]);
 	EXPECT_EQ(0x03, CBUFFER.buffer[0]);
+}
+
+TEST(gbsendpacket, gbc_initialize) {
+	SerialMock* serialMock = serialMockInstance();
+	stringCapture c;
+
+	EXPECT_CALL(*serialMock, write(Matcher<uint8_t>(_)))
+		.WillRepeatedly(Invoke(&c, &stringCapture::captureUInt8));
+	GBSendPacket(GBC_INITIALIZE, 0x0000);
+	uint8_t expectedPacket[] = {0x88, 0x33, GBC_INITIALIZE, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00};
+	// const char *receivedPacket = c.get().c_str();
+	EXPECT_EQ(11u, c.get().length());
+	// EXPECT_EQ((uint8_t)c.get().c_str()[0], 0x88);
+	releaseSerialMock();
 }
