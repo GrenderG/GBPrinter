@@ -43,5 +43,5 @@ uint16_t GBSendPacket(uint8_t command, uint16_t size);
 // Game Boy Printer Commands
 #define GBC_INITIALIZE 0x01
 #define GBC_PRINT 0x02
-#define GBC_DATA 0x04
-#define GBC_STATUS 0x0F
+#define GBC_TRANSFER 0x04
+#define GBC_REPORT 0x0F

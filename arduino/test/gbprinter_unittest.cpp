@@ -56,11 +56,11 @@ TEST(gbsendpacket, packetsize) {
 	EXPECT_EQ(10u, c.get().length());
 	c.clear();
 
-	GBSendPacket(GBC_DATA, 0x0008);
+	GBSendPacket(GBC_TRANSFER, 0x0008);
 	EXPECT_EQ(18u, c.get().length());
 	c.clear();
 
-	GBSendPacket(GBC_DATA, 0x0280);
+	GBSendPacket(GBC_TRANSFER, 0x0280);
 	EXPECT_EQ(650u, c.get().length());
 	c.clear();
 
@@ -94,7 +94,7 @@ TEST(gbsendpacket, GBC_INITIALIZE) {
 	releaseSerialMock();
 }
 
-TEST(gbsendpacket, GBC_DATA) {
+TEST(gbsendpacket, GBC_TRANSFER) {
 	SerialMock* serialMock = serialMockInstance();
 	stringCapture c;
 	CBInit();
@@ -106,13 +106,13 @@ TEST(gbsendpacket, GBC_DATA) {
 
 	EXPECT_CALL(*serialMock, write(Matcher<uint8_t>(_)))
 		.WillRepeatedly(Invoke(&c, &stringCapture::captureUInt8));
-	GBSendPacket(GBC_DATA, dataSize);
+	GBSendPacket(GBC_TRANSFER, dataSize);
 	const char *receivedPacket = c.get().c_str();
 	// magic
 	EXPECT_EQ(0x88, (uint8_t) receivedPacket[0]);
 	EXPECT_EQ(0x33, (uint8_t) receivedPacket[1]);
 	// command
-	EXPECT_EQ(GBC_DATA, (uint8_t) receivedPacket[2]);
+	EXPECT_EQ(GBC_TRANSFER, (uint8_t) receivedPacket[2]);
 	// compression
 	EXPECT_EQ(0x00, (uint8_t) receivedPacket[3]);
 	// size
