@@ -28,9 +28,10 @@ void CBWrite(byte b) {
 
 uint8_t GBSendByte(uint8_t b) {
 	// This will allow us to test GBSendPacket on test builds
-	#ifdef TESTBUILD
-		Serial.write(b);
-	#endif
+#ifdef TESTBUILD
+	Serial.write(b);
+	return 0x00;
+#else
 	uint8_t reply = 0;
 	for (uint8_t bit_pos = 0; bit_pos < 8; ++bit_pos) {
 		reply <<= 1;
@@ -55,6 +56,7 @@ uint8_t GBSendByte(uint8_t b) {
 	delayMicroseconds(DELAY_MS);
 
 	return reply;
+#endif
 }
 
 uint16_t GBSendPacket(uint8_t command, uint16_t size) {
