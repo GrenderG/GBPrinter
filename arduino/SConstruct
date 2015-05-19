@@ -39,7 +39,7 @@ arduino_mock = env_tests.Object(
 		LIBPATH="."
 )
 # Firmware sources
-firmware_src = Glob("src/*.cpp") + Glob("src/*.ino")
+firmware_src = Glob("src/*.cpp")
 # Add test sources
 test_src = Glob("test/*.cpp") + Glob("test/*.cc")
 test_programs = []
