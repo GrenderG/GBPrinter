@@ -1,6 +1,6 @@
 [submodule "arduino/lib/arduino-mock"]
 	path = arduino/lib/arduino-mock
-	url = https://github.com/ikeyasu/arduino-mock.git
+	url = https://github.com/octavifs/arduino-mock.git
         ignore = untracked
 [submodule "arduino/lib/gmock"]
 	path = arduino/lib/gmock
