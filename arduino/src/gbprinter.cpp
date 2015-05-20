@@ -90,3 +90,29 @@ uint16_t GBSendPacket(uint8_t command, uint16_t size) {
 	status |= GBSendByte(0x00);
 	return status;
 }
+
+// Initialize state
+ArduinoState ARDUINO_STATE;
+GBPState GBP_STATE;
+
+void ArduinoStateInit() {
+	ARDUINO_STATE.current = ArduinoIdle;
+	ARDUINO_STATE.total = 0;
+	ARDUINO_STATE.printed = 0;
+}
+//void GBPStateInit();
+
+funcptr ArduinoIdle() {
+	// Reset status
+	ARDUINO_STATE.total = 0;
+	ARDUINO_STATE.printed = 0;
+	// Read buffer
+	Serial.readBytesUntil('\n', SERIAL_B, 5);
+	// read buffer. If it contains a valid buffer size
+	// write total number of batches, set state
+	return (funcptr) ArduinoSetup;
+}
+
+funcptr ArduinoSetup() {
+	return (funcptr) ArduinoIdle;
+}

@@ -45,3 +45,42 @@ uint16_t GBSendPacket(uint8_t command, uint16_t size);
 #define GBC_PRINT 0x02
 #define GBC_TRANSFER 0x04
 #define GBC_REPORT 0x0F
+
+/*
+ * State Machine functions
+ * Use as ref:
+ * - http://c-faq.com/decl/recurfuncp.html
+ * - http://codeandlife.com/2013/10/06/tutorial-state-machines-with-c-callbacks/
+ * The library will have 2 state machines, one to govern the control flow between the PC and the
+ * Arduino and another to handle the control flow between the Arduino and the GBPrinter.
+ */
+typedef void (*funcptr)();   /* generic function pointer */
+typedef funcptr (*ptrfuncptr)();  /* ptr to fcn returning g.f.p. */
+
+typedef struct ArduinoState{
+	ptrfuncptr current;
+	uint32_t total;
+	uint32_t printed;
+} ArduinoState;
+
+typedef struct GBPState{
+	ptrfuncptr current;
+} GBPState;
+
+extern ArduinoState ARDUINO_STATE;
+extern GBPState GBP_STATE;
+extern uint8_t SERIAL_B[5];
+
+// Functions to reset state machine
+void ArduinoStateInit();
+void GBPStateInit();
+
+// Arduino States
+funcptr ArduinoIdle();
+funcptr ArduinoSetup();
+funcptr ArduinoPrint();
+
+// GBP States
+funcptr GBPInitialize();
+funcptr GBPTransfer();
+funcptr GBPPrint();
