@@ -15,7 +15,7 @@
  * It is very barebones, but leannes is key here
  */
 
-#define BUFFER_SIZE 640
+#define BUFFER_SIZE 640u
 
 typedef struct CBuffer{
 	uint8_t buffer[BUFFER_SIZE];
@@ -69,7 +69,8 @@ typedef struct GBPState{
 
 extern ArduinoState ARDUINO_STATE;
 extern GBPState GBP_STATE;
-extern uint8_t SERIAL_B[5];
+#define MSG_SIZE 4
+extern uint8_t MSG_BUFFER[MSG_SIZE];
 
 // Functions to reset state machine
 void ArduinoStateInit();

@@ -1,7 +1,5 @@
 #include "gbprinter.h"
-#ifdef TESTBUILD
-	#include <Serial.h>
-#endif
+#include <Serial.h>
 
 // Initialize global circular buffer
 CBuffer CBUFFER;
@@ -94,6 +92,7 @@ uint16_t GBSendPacket(uint8_t command, uint16_t size) {
 // Initialize state
 ArduinoState ARDUINO_STATE;
 GBPState GBP_STATE;
+uint8_t MSG_BUFFER[MSG_SIZE];
 
 void ArduinoStateInit() {
 	ARDUINO_STATE.current = ArduinoIdle;
@@ -107,12 +106,49 @@ funcptr ArduinoIdle() {
 	ARDUINO_STATE.total = 0;
 	ARDUINO_STATE.printed = 0;
 	// Read buffer
-	Serial.readBytesUntil('\n', SERIAL_B, 5);
-	// read buffer. If it contains a valid buffer size
-	// write total number of batches, set state
+	Serial.readBytes(MSG_BUFFER, MSG_SIZE);
+	for (int i = MSG_SIZE; i > 0; --i) {
+		ARDUINO_STATE.total |= MSG_BUFFER[i-1] << 8* (MSG_SIZE - i);
+	}
+	// Write max packet size (= BUFFER_SIZE)
+	uint32_t bufferSize = BUFFER_SIZE;
+	for (int i = 1; i <= MSG_SIZE; ++i) {
+		Serial.write((uint8_t) (bufferSize >> 8 * (MSG_SIZE - i)));
+	}
+
+	// Return next state
 	return (funcptr) ArduinoSetup;
 }
 
 funcptr ArduinoSetup() {
-	return (funcptr) ArduinoIdle;
+	// Read buffer
+	Serial.readBytes(MSG_BUFFER, 2);
+	if (strncmp((char *) MSG_BUFFER, "OK", 2) == 0) {
+		Serial.write("OK");
+		return (funcptr) ArduinoPrint;
+	}
+	else {
+		Serial.write("KO");
+		return (funcptr) ArduinoIdle;	
+	}
+}
+
+funcptr ArduinoPrint() {
+	uint16_t toRead = min(ARDUINO_STATE.total - ARDUINO_STATE.printed, BUFFER_SIZE);
+	for (uint16_t i = 0; i < toRead; ++i)
+		CBWrite(Serial.read());
+	// Now start print
+
+	// Do here all the Arduino - gbprinter shit
+
+	// If everything has gone well
+	ARDUINO_STATE.printed += toRead;
+	Serial.write("OK");
+	// Write last game boy status also
+	Serial.write(0x81);
+	Serial.write(0x22);
+	if (ARDUINO_STATE.printed == ARDUINO_STATE.total)
+		return (funcptr) ArduinoIdle;
+	else
+		return (funcptr) ArduinoPrint;
 }

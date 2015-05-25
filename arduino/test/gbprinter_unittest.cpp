@@ -6,6 +6,9 @@
 #include "arduino-mock/Serial.h"
 #include "arduino-mock/serialHelper.h"
 
+#include <sstream>
+#include <istream>
+
 #include "src/gbprinter.h"
 
 using ::testing::_;
@@ -13,6 +16,9 @@ using ::testing::Return;
 using ::testing::Matcher;
 using ::testing::AtLeast;
 using ::testing::Invoke;
+
+using ::std::string;
+using ::std::istringstream;
 
 TEST(cbuffer, initialization) {
 	EXPECT_EQ(0u, CBUFFER.start);
@@ -130,5 +136,76 @@ TEST(gbsendpacket, GBC_TRANSFER) {
 	EXPECT_EQ(0x00, (uint8_t) receivedPacket[12]);
 	EXPECT_EQ(0x00, (uint8_t) receivedPacket[13]);
 	
+	releaseSerialMock();
+}
+
+class stringWriter {
+  public:
+    stringWriter(){}
+    void str(std::string s) {d.str(s);}
+    int get() {return (int) d.get();}
+
+  private:
+    std::istringstream d;
+};
+
+TEST(ArduinoState, ArduinoIdle) {
+	char msg[] = {0x00, 0x01, 0x02, 0x03};
+	stringWriter input;
+	stringCapture c;
+	input.str(string(msg, sizeof(msg)));
+	SerialMock* serialMock = serialMockInstance();
+	EXPECT_CALL(*serialMock, read())
+		.WillRepeatedly(Invoke(&input, &stringWriter::get));
+	EXPECT_CALL(*serialMock, write(Matcher<uint8_t>(_)))
+		.WillRepeatedly(Invoke(&c, &stringCapture::captureUInt8));
+	ArduinoStateInit();
+	EXPECT_TRUE(ArduinoSetup == (ptrfuncptr)ArduinoIdle());
+
+	EXPECT_EQ(0x00, MSG_BUFFER[0]);
+	EXPECT_EQ(0x01, MSG_BUFFER[1]);
+	EXPECT_EQ(0x02, MSG_BUFFER[2]);
+	EXPECT_EQ(0x03, MSG_BUFFER[3]);
+	EXPECT_EQ(0x00010203ul, ARDUINO_STATE.total);
+
+	const uint8_t *receivedPacket = (const uint8_t*) c.get().c_str();
+	uint32_t packetsize = 0;
+	for (int i = MSG_SIZE; i > 0; --i) {
+		packetsize |= receivedPacket[i-1] << 8 * (MSG_SIZE - i);
+	}
+	EXPECT_EQ(BUFFER_SIZE, packetsize);
+
+	releaseSerialMock();
+}
+
+TEST(ArduinoState, ArduinoSetup) {
+	stringWriter input;
+	stringCapture c;
+	// Test accept by computer
+	input.str("OK");
+	SerialMock* serialMock = serialMockInstance();
+	EXPECT_CALL(*serialMock, read())
+		.WillRepeatedly(Invoke(&input, &stringWriter::get));
+	EXPECT_CALL(*serialMock, write(Matcher<const char*>(_)))
+		.WillRepeatedly(Invoke(&c, &stringCapture::captureCStrBuffer));
+	ArduinoStateInit();
+	EXPECT_TRUE(ArduinoPrint == (ptrfuncptr)ArduinoSetup());
+
+	EXPECT_FALSE(strncmp("OK",(char*) MSG_BUFFER, 2));
+
+	const char *receivedPacket = c.get().c_str();
+
+	EXPECT_STREQ("OK", receivedPacket);
+
+	c.clear();
+	// Test reject by computer
+	input.str("KO");
+	EXPECT_TRUE(ArduinoIdle == (ptrfuncptr)ArduinoSetup());
+
+	EXPECT_FALSE(strncmp("KO",(char*) MSG_BUFFER, 2));
+
+	receivedPacket = c.get().c_str();
+
+	EXPECT_STREQ("KO", receivedPacket);
 	releaseSerialMock();
 }
