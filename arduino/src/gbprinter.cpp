@@ -13,17 +13,17 @@ void CBInit() {
 
 byte CBRead() {
 	byte b = CBUFFER.buffer[CBUFFER.start];
-	CBUFFER.start = ++CBUFFER.start % BUFFER_SIZE;
+	CBUFFER.start = (CBUFFER.start + 1) % BUFFER_SIZE;
 	return b;
 }
 
 void CBWrite(byte b) {
 	CBUFFER.buffer[CBUFFER.end] = b;
-	CBUFFER.end = ++CBUFFER.end % BUFFER_SIZE;
+	CBUFFER.end = (CBUFFER.end + 1) % BUFFER_SIZE;
 }
 
 uint8_t GBSendByte(uint8_t b) {
-	// This will allow us to test GBSendPacket on test builds
+// This will allow us to test GBSendPacket on test builds
 #ifdef TESTBUILD
 	Serial.write(b);
 	return 0x00;
@@ -157,11 +157,11 @@ funcptr ArduinoPrint() {
 void GBPStateInit() {
 	GBP_STATE.current = GBPInitialize;
 	GBP_STATE.status = 0x8100;
-	GBP_STATE.printed = 0;
+	GBP_STATE.txBytes = 0;
 }
 
 funcptr GBPInitialize() {
-	GBP_STATE.printed = 0;
+	GBP_STATE.txBytes = 0;
 	GBP_STATE.status = GBSendPacket(GBC_INITIALIZE, 0);
 	if (GBP_STATE.status == 0x8100 || GBP_STATE.status == 0x8000) {
 		// All OK, advance status
@@ -173,11 +173,15 @@ funcptr GBPInitialize() {
 }
 
 funcptr GBPTransfer() {
-	uint16_t txSize = (uint16_t) min(ARDUINO_STATE.total - ARDUINO_STATE.printed - GBP_STATE.printed, PACKET_SIZE);
-	GBP_STATE.printed += txSize;
-	if (GBP_STATE.printed > GBP_MEM_SIZE) {
-		// If we were about to transfer more bytes than the GBPmemory can hold, send one last empty
-		// package and start printing
+	uint16_t txSize = (uint16_t) min(ARDUINO_STATE.total - ARDUINO_STATE.printed - GBP_STATE.txBytes, PACKET_SIZE);
+	GBP_STATE.txBytes += txSize;
+	if (GBP_STATE.txBytes > BUFFER_SIZE) {
+        // GBP Memory chip can hold 8KB of image data, which, in packages of 640bytes, it's 12
+        // of them (7680 bytes). The Arduino Nano I am using has an Atmel 328P, with 2048 bytes of RAM,
+        // so I use the CBUFFER size as a limiter here, instead of GBP_MEMORY
+        //
+        // Also, before starting the print, send one last empty transfer packet (purpose unknown, but
+        // it is specified in the protocol)
 		GBP_STATE.status = GBSendPacket(GBC_TRANSFER, 0);
 		return (funcptr) GBPPrint;
 	}
@@ -198,7 +202,7 @@ funcptr GBPPrint() {
 	if (ARDUINO_STATE.printed == 0) {
 		topMargin = 0x03;
 	}
-	if (ARDUINO_STATE.total - ARDUINO_STATE.printed <= PACKET_SIZE) {
+	if (ARDUINO_STATE.total - ARDUINO_STATE.printed <= BUFFER_SIZE) {
 		bottomMargin = 0x03;
 	}
 	// Write print status stuff
@@ -223,5 +227,6 @@ funcptr GBPPrint() {
 			break;
 		delay(100);
 	}
-	return (funcptr) GBPTransfer;
+    // Once we print, we will have read all our cached buffer, so we move to initialize
+	return (funcptr) GBPInitialize;
 }
