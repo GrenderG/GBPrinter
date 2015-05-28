@@ -48,7 +48,7 @@ for test in test_src:
 	test_programs += env_tests.Program(
 		str(test).split(".")[0] + ".out",  # executable prefixed as .out
 		firmware_src + [test, arduino_mock],
-		LIBS=["gtest", "gmock"],
+		LIBS=["gtest", "gmock", "pthread"],
 		LIBPATH="."
 	)
 # Run tests
