@@ -16,6 +16,8 @@
  */
 
 #define BUFFER_SIZE 640u
+#define PACKET_SIZE 640u
+#define GBP_MEM_SIZE 640u
 
 typedef struct CBuffer{
 	uint8_t buffer[BUFFER_SIZE];
@@ -65,6 +67,8 @@ typedef struct ArduinoState{
 
 typedef struct GBPState{
 	ptrfuncptr current;
+	uint16_t status;
+	uint16_t printed;
 } GBPState;
 
 extern ArduinoState ARDUINO_STATE;

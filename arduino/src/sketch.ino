@@ -10,8 +10,13 @@ void setup()
 	digitalWrite(GBP_IN, HIGH);  // turn on pullup resistors
 	digitalWrite(GBP_OUT, HIGH);  // turn on pullup resistors
 	CBInit();
+	ArduinoStateInit();
+	GBPStateInit();
+	Serial.begin(9600);
 }
 
 void loop()
 {
+	if (Serial.available() > 0)
+		ARDUINO_STATE.current = (ptrfuncptr) ARDUINO_STATE.current();
 }

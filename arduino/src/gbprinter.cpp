@@ -8,9 +8,7 @@ void CBInit() {
 	CBUFFER.start = 0;
 	CBUFFER.end = 0;
 	for (unsigned int i = 0; i < BUFFER_SIZE; ++i)
-	{
 		CBUFFER.buffer[i] = 0u;
-	}
 }
 
 byte CBRead() {
@@ -99,7 +97,6 @@ void ArduinoStateInit() {
 	ARDUINO_STATE.total = 0;
 	ARDUINO_STATE.printed = 0;
 }
-//void GBPStateInit();
 
 funcptr ArduinoIdle() {
 	// Reset status
@@ -140,7 +137,10 @@ funcptr ArduinoPrint() {
 	// Now start print
 
 	// Do here all the Arduino - gbprinter shit
-
+	GBPStateInit();
+	do {
+		GBP_STATE.current = (ptrfuncptr) GBP_STATE.current();
+	} while(GBP_STATE.current != GBPInitialize);
 	// If everything has gone well
 	ARDUINO_STATE.printed += toRead;
 	Serial.write("OK");
@@ -151,4 +151,77 @@ funcptr ArduinoPrint() {
 		return (funcptr) ArduinoIdle;
 	else
 		return (funcptr) ArduinoPrint;
+}
+
+
+void GBPStateInit() {
+	GBP_STATE.current = GBPInitialize;
+	GBP_STATE.status = 0x8100;
+	GBP_STATE.printed = 0;
+}
+
+funcptr GBPInitialize() {
+	GBP_STATE.printed = 0;
+	GBP_STATE.status = GBSendPacket(GBC_INITIALIZE, 0);
+	if (GBP_STATE.status == 0x8100 || GBP_STATE.status == 0x8000) {
+		// All OK, advance status
+		return (funcptr) GBPTransfer;
+	}
+	else {
+		return (funcptr) GBPInitialize;
+	}
+}
+
+funcptr GBPTransfer() {
+	uint16_t txSize = (uint16_t) min(ARDUINO_STATE.total - ARDUINO_STATE.printed - GBP_STATE.printed, PACKET_SIZE);
+	GBP_STATE.printed += txSize;
+	if (GBP_STATE.printed > GBP_MEM_SIZE) {
+		// If we were about to transfer more bytes than the GBPmemory can hold, send one last empty
+		// package and start printing
+		GBP_STATE.status = GBSendPacket(GBC_TRANSFER, 0);
+		return (funcptr) GBPPrint;
+	}
+	GBP_STATE.status = GBSendPacket(GBC_TRANSFER, txSize);
+	if (GBP_STATE.status == 0x8100 || GBP_STATE.status == 0x8000) {
+		// All OK, advance status
+		return (funcptr) GBPTransfer;
+	}
+	else {
+		return (funcptr) GBPInitialize;
+	}
+}
+
+funcptr GBPPrint() {
+	uint8_t topMargin, bottomMargin;
+	topMargin = bottomMargin = 0x00;
+	// Check if this is the first print or the last, set margins accordingly
+	if (ARDUINO_STATE.printed == 0) {
+		topMargin = 0x03;
+	}
+	if (ARDUINO_STATE.total - ARDUINO_STATE.printed <= PACKET_SIZE) {
+		bottomMargin = 0x03;
+	}
+	// Write print status stuff
+	CBWrite(topMargin);
+	CBWrite(bottomMargin);
+	// Palette
+	CBWrite(0xE4);
+	// Exposure
+	CBWrite(0x40);
+	GBP_STATE.status = GBSendPacket(GBC_PRINT, 0x04);
+	// I guess now I should check whether the command has gone OK or what, and then poll the GBPrinter
+	// with inquiry, and only return whenever everything goes well
+	while (true) {
+		GBP_STATE.status = GBSendPacket(GBC_REPORT, 0);
+		if (lowByte(GBP_STATE.status & 0x02))
+			break;
+		delay(100);
+	}
+	while (true) {
+		GBP_STATE.status = GBSendPacket(GBC_REPORT, 0);
+		if (!lowByte(GBP_STATE.status & 0x02))
+			break;
+		delay(100);
+	}
+	return (funcptr) GBPTransfer;
 }
