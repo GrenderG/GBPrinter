@@ -57,6 +57,8 @@ TEST(gbsendpacket, packetsize) {
 
 	EXPECT_CALL(*serialMock, write(Matcher<uint8_t>(_)))
 		.WillRepeatedly(Invoke(&c, &stringCapture::captureUInt8));
+	EXPECT_CALL(*serialMock, read())
+		.WillRepeatedly(Return(0x00));
 	
 	GBSendPacket(GBC_INITIALIZE, 0x0000);
 	EXPECT_EQ(10u, c.get().length());
@@ -79,6 +81,8 @@ TEST(gbsendpacket, GBC_INITIALIZE) {
 
 	EXPECT_CALL(*serialMock, write(Matcher<uint8_t>(_)))
 		.WillRepeatedly(Invoke(&c, &stringCapture::captureUInt8));
+	EXPECT_CALL(*serialMock, read())
+		.WillRepeatedly(Return(0x00));
 	GBSendPacket(GBC_INITIALIZE, 0x0000);
 	const char *receivedPacket = c.get().c_str();
 	// magic
@@ -112,6 +116,8 @@ TEST(gbsendpacket, GBC_TRANSFER) {
 
 	EXPECT_CALL(*serialMock, write(Matcher<uint8_t>(_)))
 		.WillRepeatedly(Invoke(&c, &stringCapture::captureUInt8));
+	EXPECT_CALL(*serialMock, read())
+		.WillRepeatedly(Return(0x00));
 	GBSendPacket(GBC_TRANSFER, dataSize);
 	const char *receivedPacket = c.get().c_str();
 	// magic
@@ -208,4 +214,9 @@ TEST(ArduinoState, ArduinoSetup) {
 
 	EXPECT_STREQ("KO", receivedPacket);
 	releaseSerialMock();
+}
+
+TEST(GBPState, GBPInitialize) {
+	GBPStateInit();
+	EXPECT_TRUE(GBP_STATE.current == GBPInitialize);
 }

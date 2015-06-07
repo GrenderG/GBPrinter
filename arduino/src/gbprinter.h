@@ -15,7 +15,7 @@
  * It is very barebones, but leannes is key here
  */
 
-#define BUFFER_SIZE 640u
+#define BUFFER_SIZE 1280u
 #define PACKET_SIZE 640u
 #define GBP_MEM_SIZE 7680u
 
