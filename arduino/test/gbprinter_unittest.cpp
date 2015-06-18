@@ -209,3 +209,36 @@ TEST(ArduinoState, ArduinoSetup) {
 	EXPECT_STREQ("KO", receivedPacket);
 	releaseSerialMock();
 }
+
+TEST(ArduinoState, loop) {
+    stringWriter input;
+	stringCapture c;
+	// Test accept by computer
+	input.str("OK");
+	SerialMock* serialMock = serialMockInstance();
+	EXPECT_CALL(*serialMock, read())
+		.WillRepeatedly(Invoke(&input, &stringWriter::get));
+	EXPECT_CALL(*serialMock, write(Matcher<const char*>(_)))
+		.WillRepeatedly(Invoke(&c, &stringCapture::captureCStrBuffer));
+	ArduinoStateInit();
+	EXPECT_TRUE(ArduinoPrint == (ptrfuncptr)ArduinoSetup());
+
+	EXPECT_FALSE(strncmp("OK",(char*) MSG_BUFFER, 2));
+
+	const char *receivedPacket = c.get().c_str();
+
+	EXPECT_STREQ("OK", receivedPacket);
+
+	c.clear();
+	// Test reject by computer
+	input.str("KO");
+	EXPECT_TRUE(ArduinoIdle == (ptrfuncptr)ArduinoSetup());
+
+	EXPECT_FALSE(strncmp("KO",(char*) MSG_BUFFER, 2));
+
+	receivedPacket = c.get().c_str();
+
+	EXPECT_STREQ("KO", receivedPacket);
+	releaseSerialMock();
+
+}
