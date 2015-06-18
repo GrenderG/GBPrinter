@@ -14,6 +14,8 @@ void setup()
 	ArduinoStateInit();
     // Start serial port
 	Serial.begin(9600);
+    // Set serial timeout
+    Serial.setTimeout(20000);
 }
 
 void loop()

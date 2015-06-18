@@ -103,7 +103,12 @@ funcptr ArduinoIdle() {
 	ARDUINO_STATE.total = 0;
 	ARDUINO_STATE.printed = 0;
 	// Read buffer
-	Serial.readBytes(MSG_BUFFER, MSG_SIZE);
+    uint8_t readBytes;
+	readBytes = Serial.readBytes(MSG_BUFFER, MSG_SIZE);
+    if (readBytes != MSG_SIZE) {
+        Serial.write("IDLE");
+        return (funcptr) ArduinoIdle;
+    }
 	for (int i = MSG_SIZE; i > 0; --i) {
 		ARDUINO_STATE.total |= MSG_BUFFER[i-1] << 8* (MSG_SIZE - i);
 	}
@@ -119,7 +124,12 @@ funcptr ArduinoIdle() {
 
 funcptr ArduinoSetup() {
 	// Read buffer
-	Serial.readBytes(MSG_BUFFER, 2);
+    uint8_t readBytes;
+	readBytes = Serial.readBytes(MSG_BUFFER, 2);
+    if (readBytes != MSG_SIZE) {
+        Serial.write("IDLE");
+        return (funcptr) ArduinoIdle;
+    }
 	if (strncmp((char *) MSG_BUFFER, "OK", 2) == 0) {
 		Serial.write("OK");
 		return (funcptr) ArduinoPrint;
@@ -132,8 +142,10 @@ funcptr ArduinoSetup() {
 
 funcptr ArduinoPrint() {
 	uint16_t toRead = min(ARDUINO_STATE.total - ARDUINO_STATE.printed, BUFFER_SIZE);
-	for (uint16_t i = 0; i < toRead; ++i)
+    for (uint16_t i = 0; i < toRead; ++i) {
+        while(!Serial.available()) ; // Make sure bytes are available
 		CBWrite(Serial.read());
+    }
 	// Now start print
 
 	// Do here all the Arduino - gbprinter shit
