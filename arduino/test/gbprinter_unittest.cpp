@@ -57,6 +57,8 @@ TEST(gbsendpacket, packetsize) {
 
 	EXPECT_CALL(*serialMock, write(Matcher<uint8_t>(_)))
 		.WillRepeatedly(Invoke(&c, &stringCapture::captureUInt8));
+	EXPECT_CALL(*serialMock, read())
+		.WillRepeatedly(Return(0x00));
 	
 	GBSendPacket(GBC_INITIALIZE, 0x0000);
 	EXPECT_EQ(10u, c.get().length());
@@ -79,6 +81,8 @@ TEST(gbsendpacket, GBC_INITIALIZE) {
 
 	EXPECT_CALL(*serialMock, write(Matcher<uint8_t>(_)))
 		.WillRepeatedly(Invoke(&c, &stringCapture::captureUInt8));
+	EXPECT_CALL(*serialMock, read())
+		.WillRepeatedly(Return(0x00));
 	GBSendPacket(GBC_INITIALIZE, 0x0000);
 	const char *receivedPacket = c.get().c_str();
 	// magic
@@ -112,6 +116,8 @@ TEST(gbsendpacket, GBC_TRANSFER) {
 
 	EXPECT_CALL(*serialMock, write(Matcher<uint8_t>(_)))
 		.WillRepeatedly(Invoke(&c, &stringCapture::captureUInt8));
+	EXPECT_CALL(*serialMock, read())
+		.WillRepeatedly(Return(0x00));
 	GBSendPacket(GBC_TRANSFER, dataSize);
 	const char *receivedPacket = c.get().c_str();
 	// magic
@@ -242,3 +248,75 @@ TEST(ArduinoState, loop) {
 	releaseSerialMock();
 
 }
+
+TEST(GBPInitialize, GBPTransfer) {
+	SerialMock* serialMock = serialMockInstance();
+	EXPECT_CALL(*serialMock, write(Matcher<uint8_t>(_)))
+		.Times(10);
+	EXPECT_CALL(*serialMock, read())
+		.WillOnce(Return(0x00))
+		.WillOnce(Return(0x00))
+		.WillOnce(Return(0x00))
+		.WillOnce(Return(0x00))
+		.WillOnce(Return(0x00))
+		.WillOnce(Return(0x00))
+		.WillOnce(Return(0x00))
+		.WillOnce(Return(0x00))
+		.WillOnce(Return(0x81))
+		.WillOnce(Return(0x00));
+	
+	GBPStateInit();
+	EXPECT_TRUE(GBP_STATE.current == GBPInitialize);
+
+	GBP_STATE.current = (ptrfuncptr) GBP_STATE.current();
+
+	EXPECT_TRUE(GBP_STATE.current == GBPTransfer);
+
+	releaseSerialMock();
+}
+
+TEST(GBPInitialize, GBPInitialize) {
+	SerialMock* serialMock = serialMockInstance();
+	EXPECT_CALL(*serialMock, write(Matcher<uint8_t>(_)))
+		.Times(10);
+	EXPECT_CALL(*serialMock, read())
+		.WillOnce(Return(0x00))
+		.WillOnce(Return(0x00))
+		.WillOnce(Return(0x00))
+		.WillOnce(Return(0x00))
+		.WillOnce(Return(0x00))
+		.WillOnce(Return(0x00))
+		.WillOnce(Return(0x00))
+		.WillOnce(Return(0x00))
+		.WillOnce(Return(0x81))
+		.WillOnce(Return(0x01));
+	
+	GBPStateInit();
+	EXPECT_TRUE(GBP_STATE.current == GBPInitialize);
+
+	GBP_STATE.current = (ptrfuncptr) GBP_STATE.current();
+
+	EXPECT_TRUE(GBP_STATE.current == GBPInitialize);
+
+	releaseSerialMock();
+}
+
+TEST(GBPTransfer, GBPPrint) {
+	ArduinoStateInit();
+	GBPStateInit();
+	ARDUINO_STATE.total = 4 * BUFFER_SIZE;
+	GBP_STATE.txBytes = BUFFER_SIZE - PACKET_SIZE + 1;
+
+	SerialMock* serialMock = serialMockInstance();
+	EXPECT_CALL(*serialMock, write(Matcher<uint8_t>(_)))
+		.Times(10);
+	EXPECT_CALL(*serialMock, read())
+		.Times(10);
+
+	GBP_STATE.current = (ptrfuncptr) GBPTransfer();
+
+	EXPECT_TRUE(GBP_STATE.current == GBPPrint);
+
+	releaseSerialMock();
+}
+

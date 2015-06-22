@@ -1,6 +1,7 @@
 #include "gbprinter.h"
+#ifdef TESTBUILD
 #include <Serial.h>
-
+#endif
 // Initialize global circular buffer
 CBuffer CBUFFER;
 
@@ -26,7 +27,7 @@ uint8_t GBSendByte(uint8_t b) {
 // This will allow us to test GBSendPacket on test builds
 #ifdef TESTBUILD
 	Serial.write(b);
-	return 0x00;
+	return Serial.read();
 #else
 	uint8_t reply = 0;
 	for (uint8_t bit_pos = 0; bit_pos < 8; ++bit_pos) {
