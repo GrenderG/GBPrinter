@@ -158,10 +158,11 @@ funcptr ArduinoPrint() {
 	} while(GBP_STATE.current != GBPInitialize);
 	// If everything has gone well
 	ARDUINO_STATE.printed += toRead;
+	uint16_t status = ARDUINO_STATE.status;
 	Serial.write("OK");
 	// Write last game boy status also
-	Serial.write(0x81);
-	Serial.write(0x22);
+	Serial.write(lowByte(status));
+	Serial.write(highByte(status));
 	if (ARDUINO_STATE.printed == ARDUINO_STATE.total)
 		return (funcptr) ArduinoIdle;
 	else
