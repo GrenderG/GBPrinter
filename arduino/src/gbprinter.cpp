@@ -74,7 +74,11 @@ uint16_t GBSendPacket(uint8_t command, uint16_t size) {
 	// Send data
 	uint8_t b;
 	for (uint16_t i = 0; i < size; ++i) {
-		b = CBRead();
+		if (command == GBC_TRANSFER) {
+			b = 0xff;
+		} else {
+			b = CBRead();
+		}
 		checksum += b;
 		GBSendByte(b);
 	}
@@ -108,7 +112,7 @@ funcptr ArduinoIdle() {
     while(Serial.available() < 4) ; // Make sure bytes are available
 	readBytes = Serial.readBytes(MSG_BUFFER, MSG_SIZE);
     if (readBytes != MSG_SIZE) {
-        Serial.write("IDLE");
+    	// If read times out, just return to idle state again
         return (funcptr) ArduinoIdle;
     }
 	for (int i = MSG_SIZE; i > 0; --i) {
@@ -117,7 +121,7 @@ funcptr ArduinoIdle() {
 	// Write max packet size (= BUFFER_SIZE)
 	uint32_t bufferSize = BUFFER_SIZE;
 	for (int i = 1; i <= MSG_SIZE; ++i) {
-		Serial.write((uint8_t) (bufferSize >> 8 * (MSG_SIZE - i)));
+		Serial.write((uint8_t) (BUFFER_SIZE >> 8 * (MSG_SIZE - i)));
 	}
 
 	// Return next state
@@ -129,10 +133,6 @@ funcptr ArduinoSetup() {
     uint8_t readBytes;
     while(Serial.available() < 2) ; // Make sure bytes are available
 	readBytes = Serial.readBytes(MSG_BUFFER, 2);
-    // if (readBytes != MSG_SIZE) {
-    //     Serial.write("IDLE");
-    //     return (funcptr) ArduinoIdle;
-    // }
 	if (strncmp((char *) MSG_BUFFER, "OK", 2) == 0) {
 		Serial.write("OK");
 		return (funcptr) ArduinoPrint;
@@ -151,21 +151,23 @@ funcptr ArduinoPrint() {
     }
 	// Now start print
 
-	// Do here all the Arduino - gbprinter shit
+	// Run the GBPrinter inner state machine
 	GBPStateInit();
 	do {
 		GBP_STATE.current = (ptrfuncptr) GBP_STATE.current();
 	} while(GBP_STATE.current != GBPInitialize);
 	// If everything has gone well
 	ARDUINO_STATE.printed += toRead;
-	uint16_t status = ARDUINO_STATE.status;
+	uint16_t status = GBP_STATE.status;
 	Serial.write("OK");
 	// Write last game boy status also
 	Serial.write(lowByte(status));
 	Serial.write(highByte(status));
-	if (ARDUINO_STATE.printed == ARDUINO_STATE.total)
+	if (ARDUINO_STATE.printed >= ARDUINO_STATE.total)
+		// That would mean we have printed everything!
 		return (funcptr) ArduinoIdle;
 	else
+		// Read more data from serial, print it
 		return (funcptr) ArduinoPrint;
 }
 
@@ -177,12 +179,10 @@ void GBPStateInit() {
 }
 
 funcptr GBPInitialize() {
+	// txBytes = 0. Query printer status. If all OK, proceed to transfer buffer to gbprinter
 	GBP_STATE.txBytes = 0;
 	GBP_STATE.status = GBSendPacket(GBC_INITIALIZE, 0);
 	uint16_t status = GBP_STATE.status;
-	Serial.write("INIT");
-	Serial.write(lowByte(status));
-	Serial.write(highByte(status));
 	if (GBP_STATE.status == 0x8100 || GBP_STATE.status == 0x8000) {
 		// All OK, advance status
 		return (funcptr) GBPTransfer;
@@ -194,11 +194,14 @@ funcptr GBPInitialize() {
 
 funcptr GBPTransfer() {
 	uint16_t txSize = (uint16_t) min(ARDUINO_STATE.total - ARDUINO_STATE.printed - GBP_STATE.txBytes, PACKET_SIZE);
-	Serial.write("TX");
-	Serial.write(lowByte(txSize));
-	Serial.write(highByte(txSize));
-	GBP_STATE.txBytes += 640;
-	if (GBP_STATE.txBytes > BUFFER_SIZE) {
+	GBP_STATE.txBytes += txSize;
+	GBP_STATE.status = GBSendPacket(GBC_TRANSFER, txSize);
+	uint16_t status = GBP_STATE.status;
+	if ((GBP_STATE.status == 0x8100 || GBP_STATE.status == 0x8108) && GBP_STATE.txBytes < BUFFER_SIZE) {
+		// All OK, advance status
+		return (funcptr) GBPTransfer;
+	}
+	else if ((GBP_STATE.status == 0x8100 || GBP_STATE.status == 0x8108) && GBP_STATE.txBytes >= BUFFER_SIZE) {
         // GBP Memory chip can hold 8KB of image data, which, in packages of 640bytes, it's 12
         // of them (7680 bytes). The Arduino Nano I am using has an Atmel 328P, with 2048 bytes of RAM,
         // so I use the CBUFFER size as a limiter here, instead of GBP_MEMORY
@@ -207,16 +210,6 @@ funcptr GBPTransfer() {
         // it is specified in the protocol)
 		GBP_STATE.status = GBSendPacket(GBC_TRANSFER, 0);
 		return (funcptr) GBPPrint;
-	}
-	GBP_STATE.status = GBSendPacket(GBC_TRANSFER, txSize);
-	uint16_t status = GBP_STATE.status;
-	Serial.write("TX");
-	Serial.write(lowByte(status));
-	Serial.write(highByte(status));
-	return (funcptr) GBPTransfer;
-	if (GBP_STATE.status == 0x0081 || GBP_STATE.status == 0x0080) {
-		// All OK, advance status
-		return (funcptr) GBPTransfer;
 	}
 	else {
 		return (funcptr) GBPInitialize;
@@ -229,35 +222,29 @@ funcptr GBPPrint() {
 	// Check if this is the first print or the last, set margins accordingly
 	// ard
 	// Write print status stuff
-	CBWrite(0x00);
-	CBWrite(0x01);
+	if (ARDUINO_STATE.total == 0) {
+		topMargin = 0x04;
+	}
+	if (ARDUINO_STATE.printed + GBP_STATE.status >= ARDUINO_STATE.total) {
+		bottomMargin = 0x04;
+	}
+	CBWrite(topMargin);
+	CBWrite(bottomMargin);
 	// Palette
-	CBWrite(0xE4);
+	CBWrite(0xFF);
 	// Exposure
-	CBWrite(0x40);
+	CBWrite(0xFF);
 	GBP_STATE.status = GBSendPacket(GBC_PRINT, 0x04);
-	uint16_t status = GBP_STATE.status;
-	Serial.write("PR");
-	Serial.write(lowByte(status));
-	Serial.write(highByte(status));
 	// I guess now I should check whether the command has gone OK or what, and then poll the GBPrinter
 	// with inquiry, and only return whenever everything goes well
 	while (true) {
 		GBP_STATE.status = GBSendPacket(GBC_REPORT, 0);
-		status = GBP_STATE.status;
-		Serial.write("ST");
-		Serial.write(lowByte(status));
-		Serial.write(highByte(status));
 		if (lowByte(GBP_STATE.status & 0x02))
 			break;
 		delay(100);
 	}
 	while (true) {
 		GBP_STATE.status = GBSendPacket(GBC_REPORT, 0);
-		status = GBP_STATE.status;
-		Serial.write("ST");
-		Serial.write(lowByte(status));
-		Serial.write(highByte(status));
 		if (!lowByte(GBP_STATE.status & 0x02))
 			break;
 		delay(100);
