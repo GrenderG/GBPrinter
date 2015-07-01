@@ -74,11 +74,7 @@ uint16_t GBSendPacket(uint8_t command, uint16_t size) {
 	// Send data
 	uint8_t b;
 	for (uint16_t i = 0; i < size; ++i) {
-		if (command == GBC_TRANSFER) {
-			b = 0xff;
-		} else {
-			b = CBRead();
-		}
+		b = CBRead();
 		checksum += b;
 		GBSendByte(b);
 	}
@@ -208,6 +204,7 @@ funcptr GBPTransfer() {
         //
         // Also, before starting the print, send one last empty transfer packet (purpose unknown, but
         // it is specified in the protocol)
+        GBP_STATE.status = GBSendPacket(GBC_REPORT, 0);
 		GBP_STATE.status = GBSendPacket(GBC_TRANSFER, 0);
 		return (funcptr) GBPPrint;
 	}
@@ -223,17 +220,20 @@ funcptr GBPPrint() {
 	// ard
 	// Write print status stuff
 	if (ARDUINO_STATE.total == 0) {
-		topMargin = 0x04;
+		topMargin = 0x40;
 	}
 	if (ARDUINO_STATE.printed + GBP_STATE.status >= ARDUINO_STATE.total) {
 		bottomMargin = 0x04;
 	}
-	CBWrite(topMargin);
-	CBWrite(bottomMargin);
-	// Palette
-	CBWrite(0xFF);
+	// The first byte is always set to 0x01, and its purpose is unknown. 
+	CBWrite(0x01);
+	// Top and low margin share the same byte (4 bits each)
+	//CBWrite(topMargin | bottomMargin);
+	CBWrite(0x00);
+	// Palette: 11 | 10 | 01 | 00 => Black | Dark Grey | Light Grey | White
+	CBWrite(0xE4);
 	// Exposure
-	CBWrite(0xFF);
+	CBWrite(0x40);
 	GBP_STATE.status = GBSendPacket(GBC_PRINT, 0x04);
 	// I guess now I should check whether the command has gone OK or what, and then poll the GBPrinter
 	// with inquiry, and only return whenever everything goes well
