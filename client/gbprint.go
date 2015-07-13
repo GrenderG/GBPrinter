@@ -26,8 +26,14 @@ var gbpPalette = color.Palette{
 }
 
 // Dithering algorithms
-// Dithering is necessary to prevent color banding on a colorspace as limited
-// as the one available on the Game Boy Printer.
+// Dithering is the process of reducing the colorspace of an image to a more
+// restricted palette. Since the Game Boy Printer only has a 2bit colorspace
+// available, it's important that some dithering algorithms are implemented to
+// deal with the fact. Depending on the properties of the dithering algorithm
+// detail may or may not be preserved as well. Using simple techniques like
+// average dithering will yield results with lots of color banding, while employing
+// error diffusion techniques such as Floyd Steinberg will produce smoother
+// results (color banding is replaced by the introduction of noise)
 // The wikipedia article (http://en.wikipedia.org/wiki/Dither) is quite interesting
 // and talks about some dithering algorithms, some of which are implemented here.
 // Floyd Steinberg is an error diffusion dithering algorithm that adds the error
@@ -72,12 +78,12 @@ func ditheringAverage(img *image.Gray, p *color.Palette) {
 	}
 }
 
+// So far this openImg function supports as many formats as the import statements on this file
+// declare. As of writing this comment this is:
+// - gif
+// - jpeg
+// - png
 func openImg(path string) (img image.Image, err error) {
-	// So far this openImg function supports as many formats as the import statements on this file
-	// declare. As of writing this comment this is:
-	// - gif
-	// - jpeg
-	// - png
 	r, err := os.Open(path)
 	defer r.Close()
 	if err != nil {
@@ -98,10 +104,11 @@ func saveJpg(path string, img image.Image) error {
 	return err
 }
 
-// The GBPrinter image format requires the image to be sent tile by tile, instead of line by line.
-// Each tile is made of a 8x8 pixels and must be serialized top down, left right. After each
-// pixel in a tile has been added to the channel, the loop goes onto the next tile, until the pixels
-// have been fully fed to the channel
+// The GBPrinter image format requires the image to be sent tile by tile,
+// instead of line by line. Each tile is made of a 8x8 pixels and must be
+// serialized top down, left right. After each pixel in a tile has been added
+// to the channel, the loop goes onto the next tile, until the pixels have been
+// fully fed to the channel
 func readPixelsByTiles(img image.Image) <-chan byte {
 	pixels := make(chan byte)
 	go func() {
@@ -120,7 +127,7 @@ func readPixelsByTiles(img image.Image) <-chan byte {
 }
 
 // Write pixels read from chan pixels to buffer. Each pixel will have values of [0, 3], so it fits
-// in 2 bits. Each byte holds 4 pixels thus.
+// in 2 bits. As a result, each byte holds 4 pixels.
 func writePixelsToBuffer(pixels <-chan byte, buffer []byte) {
 	for idx := range buffer {
 		for i := 6; i >= 0; i -= 2 {
@@ -195,6 +202,10 @@ func main() {
 	var grayImg *image.Gray
 
 	// Convert to grayscale & rotate (if required)
+	// Converting to grayscale is a necessary previous step before applying
+	// dithering. We can also rotate the image if required (the idea behind)
+	// the rotation is that we want the Y axis of the image to be the longest
+	// since the X axis (width) has a hard limit of 160px
 	if rotationRequired {
 		grayImg = image.NewGray(image.Rect(0, 0, size.Max.Y, size.Max.X))
 		// Convert to Gray colorspace
@@ -232,17 +243,25 @@ func main() {
 	}
 
 	// Serialize transformed img into a byte array we can send to the GBPrinter
+	// Since we can fit 4 pixels in a byte, buffer length its total number of
+	// pixels divided by 4
 	imgBuffer := make([]byte, grayImg.Bounds().Max.X*grayImg.Bounds().Max.Y/4)
 	writePixelsToBuffer(readPixelsByTiles(grayImg), imgBuffer)
 
-	c := &serial.Config{Name: fSerial, Baud: 9600, ReadTimeout: time.Second * 500}
+	// Open a connection to specified serial port. Set a large timeout. Printing
+	// takes some time after all
+	c := &serial.Config{Name: fSerial, Baud: 9600, ReadTimeout: time.Second * 120}
 	s, err := serial.OpenPort(c)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
 
+	// We will be sending and receiving both 4 and 2 byte buffers. Create them.
 	msgBuf4 := make([]byte, 4)
 	msgBuf2 := make([]byte, 2)
+	// We open the connection sending the length of the buffer we want to print.
+	// It's a uint32 sent little endian style (smallest byte, smallest mem addr)
+	// So we have to reverse the number
 	for idx := range msgBuf4 {
 		msgBuf4[idx] = byte(uint32(len(imgBuffer)) & (uint32(0xFF) << uint((3-idx)*8)) >> uint((3-idx)*8))
 	}
@@ -251,17 +270,23 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	// This reads the max length that is to be expected from our packages
 	_, err = s.Read(msgBuf4)
 	log.Println(msgBuf4)
 	if err != nil {
 		log.Fatal(err)
 	}
+	// ACK the transaction
 	s.Write([]byte("OK"))
+	// Receive ACK from printer
 	_, err = s.Read(msgBuf2)
 	log.Println(msgBuf2)
 	if err != nil {
 		log.Fatal(err)
 	}
+	// Start sending img byte buffer. buf_size at a time. After every package
+	// read the 4 byte response package, with the overall status and the finer
+	// grained bit status of the printer
 	buf_size := 1280
 	for idx := 0; idx < len(imgBuffer); idx += buf_size {
 		var remaining int
