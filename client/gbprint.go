@@ -26,6 +26,13 @@ var gbpPalette = color.Palette{
 }
 
 // Dithering algorithms
+// Dithering is necessary to prevent color banding on a colorspace as limited
+// as the one available on the Game Boy Printer.
+// The wikipedia article (http://en.wikipedia.org/wiki/Dither) is quite interesting
+// and talks about some dithering algorithms, some of which are implemented here.
+// Floyd Steinberg is an error diffusion dithering algorithm that adds the error
+// of each color conversion to the neighbours of each pixel. This way it's possible
+// to achieve a finer graded dithering
 func ditheringFloydSteinberg(img *image.Gray, p *color.Palette) {
 	size := img.Bounds()
 	for y := size.Min.Y; y < size.Max.Y; y++ {
@@ -54,7 +61,7 @@ func ditheringFloydSteinberg(img *image.Gray, p *color.Palette) {
 // Transforms gray input image color depth to the palette defined in p
 // The algorithm simply assigns the nearest palette color to each pixel,
 // without distributing error in any way, so expect color banding
-func ditheringNone(img *image.Gray, p *color.Palette) {
+func ditheringAverage(img *image.Gray, p *color.Palette) {
 	size := img.Bounds()
 	for y := size.Min.Y; y < size.Max.Y; y++ {
 		for x := size.Min.X; x < size.Max.X; x++ {
@@ -129,7 +136,7 @@ var fNoRotate, fNoResize bool
 func init() {
 	flag.StringVar(&fSerial, "serial", "", "Serial interface to connect to gbprinter [ex: /dev/tty.usb1]")
 	flag.StringVar(&fDither, "dither", "FLOYDSTEINBERG", "Dithering algorithm to apply. "+
-		"Options: [NONE|FLOYDSTEINBERG(DEFAULT)]")
+		"Options: [AVERAGE|FLOYDSTEINBERG(DEFAULT)]")
 	flag.StringVar(&fSave, "save", "", "Save path for resulting image (jpg format). "+
 		"Useful to preview the printing results. Only applies if -serial flag disabled")
 
@@ -152,7 +159,7 @@ func main() {
 	}
 
 	switch fDither {
-	case "NONE":
+	case "AVERAGE":
 	case "FLOYDSTEINBERG":
 	default:
 		log.Fatalln("Specify a dithering algorithm from the list shown in -help")
@@ -208,8 +215,8 @@ func main() {
 
 	// Apply selected dithering algorithm
 	switch fDither {
-	case "NONE":
-		ditheringNone(grayImg, &gbpPalette)
+	case "AVERAGE":
+		ditheringAverage(grayImg, &gbpPalette)
 	case "FLOYDSTEINBERG":
 		ditheringFloydSteinberg(grayImg, &gbpPalette)
 	}
