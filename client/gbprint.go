@@ -9,6 +9,7 @@ import (
 	_ "image/png"
 	"log"
 	"os"
+	"time"
 
 	"github.com/nfnt/resize"
 	"github.com/tarm/serial"
@@ -224,19 +225,16 @@ func main() {
 	imgBuffer := make([]byte, grayImg.Bounds().Max.X*grayImg.Bounds().Max.Y/4)
 	writePixelsToBuffer(readPixelsByTiles(grayImg), imgBuffer)
 
-	log.Println(imgBuffer)
-	return
-
-	c := &serial.Config{Name: "/dev/tty.usbserial-A5047I3M", Baud: 9600}
+	c := &serial.Config{Name: fSerial, Baud: 9600, ReadTimeout: time.Second * 500}
 	s, err := serial.OpenPort(c)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err.Error())
 	}
 
 	msgBuf4 := make([]byte, 4)
 	msgBuf2 := make([]byte, 2)
 	for idx := range msgBuf4 {
-		msgBuf4[idx] = byte(len(imgBuffer)&(0xFF<<uint((3-idx)*8))) >> uint((3-idx)*8)
+		msgBuf4[idx] = byte(uint32(len(imgBuffer)) & (uint32(0xFF) << uint((3-idx)*8)) >> uint((3-idx)*8))
 	}
 	log.Println(msgBuf4)
 	_, err = s.Write(msgBuf4)
@@ -264,6 +262,7 @@ func main() {
 		}
 		s.Write(imgBuffer[idx:remaining])
 		s.Read(msgBuf4)
+		log.Println(msgBuf4)
 	}
 	log.Println("DONE!")
 }
