@@ -270,7 +270,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// This reads the max length that is to be expected from our packages
+	// This reads the max length that is to be expected from our payload
 	_, err = s.Read(msgBuf4)
 	log.Println(msgBuf4)
 	if err != nil {
@@ -284,16 +284,16 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// Start sending img byte buffer. buf_size at a time. After every package
+	// Start sending img byte buffer. payloadLength at a time. After every package
 	// read the 4 byte response package, with the overall status and the finer
 	// grained bit status of the printer
-	buf_size := 1280
-	for idx := 0; idx < len(imgBuffer); idx += buf_size {
+	payloadLength := 1280
+	for idx := 0; idx < len(imgBuffer); idx += payloadLength {
 		var remaining int
-		if idx+buf_size > len(imgBuffer) {
+		if idx+payloadLength > len(imgBuffer) {
 			remaining = len(imgBuffer)
 		} else {
-			remaining = idx + buf_size
+			remaining = idx + payloadLength
 		}
 		s.Write(imgBuffer[idx:remaining])
 		s.Read(msgBuf4)
