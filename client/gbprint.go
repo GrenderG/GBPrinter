@@ -51,7 +51,10 @@ func ditheringFloydSteinberg(img *image.Gray, p *color.Palette) {
 	}
 }
 
-func ditheringNearest(img *image.Gray, p *color.Palette) {
+// Transforms gray input image color depth to the palette defined in p
+// The algorithm simply assigns the nearest palette color to each pixel,
+// without distributing error in any way, so expect color banding
+func ditheringNone(img *image.Gray, p *color.Palette) {
 	size := img.Bounds()
 	for y := size.Min.Y; y < size.Max.Y; y++ {
 		for x := size.Min.X; x < size.Max.X; x++ {
@@ -206,7 +209,7 @@ func main() {
 	// Apply selected dithering algorithm
 	switch fDither {
 	case "NONE":
-		ditheringNearest(grayImg, &gbpPalette)
+		ditheringNone(grayImg, &gbpPalette)
 	case "FLOYDSTEINBERG":
 		ditheringFloydSteinberg(grayImg, &gbpPalette)
 	}
