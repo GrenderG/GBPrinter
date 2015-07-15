@@ -10,13 +10,13 @@ This arduino library and go client make it possible to connect a [Game Boy Print
 To upload the firmware to your arduino device open `arduino/src/src.ino` with
 the Arduino IDE and follow the usual upload process. No extra steps are needed.
 
-The Game Boy Printer has a second generation [Game Link](https://en.wikipedia.org/wiki/Game_Link_Cable) cable interface. It's pinout is as follows
+The Game Boy Printer has a second generation [Game Link](https://en.wikipedia.org/wiki/Game_Link_Cable) cable interface. Its pinout is as follows
 
     Female port pinout          Male port pinout
-     __^__                      __^__ 
-    /5 3 1\                    /1 3 5\
-    |6 4 2|                    |2 4 6|
-     -----                      -----
+         __^__                       __^__ 
+        /5 3 1\                     /1 3 5\
+        |6 4 2|                     |2 4 6|
+         -----                       -----
 
 1. VCC (5v)
 2. Serial Out
@@ -28,9 +28,6 @@ The Game Boy Printer has a second generation [Game Link](https://en.wikipedia.or
 Serial In and Out are crossed in the GameLink cable, to enable full duplex
 communication (albeit is not used here). For this project, we will only need
 to wire serial in, out, clock and ground to the arduino, as follows:
-
-The Game Boy Printer GameLink cable needs to be connected to the Arduino as
-follows:
 
 - Serial Clock > D8
 - Serial In > D9
@@ -93,8 +90,8 @@ the firmware published by Furrtek (originally for an ATtiny85) to the Arduino.
 The main addition of this fork is the work that has been done on the interface
 Arduino - PC, which now allows to easily transform and transfer an arbitrary
 image to the printer. Also, the compilation of sources and information available
-on this README should be quite useful to anybody trying to figure out how the
-this works.
+on this README should be quite useful to anybody trying to figure out how this
+works.
 
 A list of references I've used throughout the project:
 
@@ -107,7 +104,7 @@ A list of references I've used throughout the project:
 
 
 ## Firmware
-
+WIP
 ### Communication Protocol
 
 ### States
@@ -145,7 +142,7 @@ bauds. The lifecycle of printing an image buffer is as follows:
       internal hardware state. The printer will only reply once it has printed the
       data that was sent in the previous package
       > If b"KOxx" the printer could not complete the print request. Check status
-        bytes for more data on the error and abort the process
+        bytes for more info on the error and abort the process
     ^ Repeat the last 2 steps until the whole imageBuffer has been sent
 
 ### Image processing
@@ -158,22 +155,22 @@ larger or equal to the width (maximizing image real estate) and convert it to
 grayscale. Once it is in grayscale, it will dither the image from 8bit to 2bit.
 By default it uses the Floyd Steinberg algorithm (`-dither FLOYDSTEINBERG`), which is good at preserving
 detail and works well with real world images (although this printer is not
-precisely the best for this kind of finer stuff). If you plan on printing
-illustrations, text, or want more contrast, in general, use the average dither
-method (`-dither AVERAGE`).
+precisely the best for highly detailed stuff). If you plan on printing
+illustrations, text, or want more contrast, you might be better off using
+an average dither (`-dither AVERAGE`).
 
 ### Image format
 Game Boy Printer images have a fixed width of 160px and unlimited length (as
-long as the paper / battery last). An image can be further decomposed in pages,
+long as the paper or battery last). An image can be further decomposed in pages,
 bands and tiles.
 
 **Tile:** A 8x8 fragment of the image.
 
 **Band:** A 160x16 fragment of the image, or 40 tiles. This is the minimum image
-fragment that can be passed to the printer.
+fragment that can be sent to the printer.
 
-**Page:** A group of up to 9 bands. The buffer of the printer will hold up to 9
-bands before a print command has to be issued. Since it's possible to print
+**Page:** A group of up to 9 bands. The buffer of the printer will hold a max of
+9 bands before a print command has to be issued. Since it's possible to print
 0-margin images, a full image can be completed successfully by chain-printing
 multiple pages together.
 
