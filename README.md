@@ -2,10 +2,11 @@
 
 This arduino library and go client make it possible to connect a [Game Boy Printer](https://en.wikipedia.org/wiki/Game_Boy_Printer) to any computer and print an image of your choice.
 
-*A video should go in here*
+[![Firmware demo](http://img.youtube.com/vi/HBTeIwrXzhc/0.jpg)](https://youtu.be/HBTeIwrXzhc)
 
 ## Installation and setup
 
+### Arduino
 To upload the firmware to your arduino device open `arduino/src/src.ino` with
 the Arduino IDE and follow the usual upload process. No extra steps are needed.
 
@@ -46,6 +47,8 @@ TODO: The test suite is a bit broken at the moment, but it was quite useful to
 test concepts and make sure that things like state transitions or the circle
 buffer worked properly.
 
+
+### Go Client
 Building the client in go (>=1.3) is simple:
 
     go get github.com/nfnt/resize
@@ -63,15 +66,17 @@ If you just want to test the client for a bit, see what sort of output you can
 expect from your printer, there is also the option to output the resulting image
 to a file (instead of printing):
 
-    ./gbprint -save out.jpg awesome_cat.jpg  # Image as sent to the printer
-    ./gbprint -save out.jpg -no-rotate awesome_cat.jpg  # Don't rotate
-    ./gbprint -save out.jpg -no-resize awesome_cat.jpg  # Don't resize
-    ./gbprint -save out.jpg -no-resize -no-rotate awesome_cat.jpg
-    ./gbprint -save out.jpg -dither AVERAGE awesome_cat.jpg  # Use avg dithering instead of Floyd Steinberg
+    ./gbprint -save out.jpg doc/test1.jpg  # Image as sent to the printer
+    ./gbprint -save out.jpg -no-rotate doc/test1.jpg  # Don't rotate
+    ./gbprint -save out.jpg -no-resize doc/test1.jpg  # Don't resize
+    ./gbprint -save out.jpg -no-resize -no-rotate doc/test1.jpg
+    ./gbprint -save out.jpg -dither AVERAGE doc/test1.jpg  # Use avg dithering instead of Floyd Steinberg
 
-As expected, you can explore the client options by invoking it with `--help`.
+As expected, you can invoke gbprint with `--help` to get the full list of available options.
 
-TODO: Post some results of the commands mentioned in the examples above
+Here is a chart with some test images. As you can see, depending on the input, it might be more
+interesting to use different dithering algorithms.
+![Chart with some test image results. Individual images can be found on the /doc directory](doc/test_chart.jpg)
 
 
 ## Previous work and references
@@ -79,21 +84,22 @@ This could not have existed without the awesome reverse engineering work done by
 Furrtek, which was the first (to my knowledge) to uncover the GBPrinter protocol
 and inner hardware details.
 
-The work from millburton and davedarko has also been very helpful to translate
+The work from milesburton and davedarko has also been very helpful to translate
 the firmware published by Furrtek (originally for an ATtiny85) to the Arduino.
 
 The main addition of this fork is the work that has been done on the interface
 Arduino - PC, which now allows to easily transform and transfer an arbitrary
 image to the printer. Also, the compilation of sources and information available
-on this README should be quite useful for anybody trying to figure out how the
-protocol and hardware work.
+on this README should be quite useful to anybody trying to figure out how the
+this works.
 
-A list of references I've used throughout the project, from most to least employed:
+A list of references I've used throughout the project:
 
+- [Furrtek GBPrinter hardware and package format details (French)](http://furrtek.free.fr/index.php?p=crea&a=gbprinter)
 - [Furrtek making of a Game Boy Link cable to USB](http://furrtek.free.fr/index.php?p=crea&a=gbpcable&i=2)
-- [Furrtek GBPrinter Hardware and package format details](http://furrtek.free.fr/index.php?p=crea&a=gbprinter)
-
-TODO: I should put some millburton stuff or something else, but those 2 articles are the main source.
+- [Davedarko GitHub repo](http://github.com/davedarko/GBPrinter)
+- [Davedarko GBPrinter posts (German)](http://davedarko.com/blog.php?tag=gameboy%20printer)
+- [Miles Burton wiki](http://milesburton.com/Gameboy_Printer_with_Arduino)
 
 
 ## Firmware
