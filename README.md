@@ -103,15 +103,51 @@ A list of references I've used throughout the project:
 - [Miles Burton wiki](http://milesburton.com/Gameboy_Printer_with_Arduino)
 
 
-## Firmware
-WIP
-### Communication Protocol
+### Overall design
+This GBPrinter driver is designed as 2 state machines working in conjuction.
+The main state machine controls the flow of data PC-Arduino, while the secondary
+deals with the communication Arduino-Printer.
+
+### Communicatin protocol
+
 
 ### States
 
 ### Error codes
 
-### Connection & Cable details
+### Package format
+- 6 bytes header
+- up to 640 bytes of payload
+- 4 bytes trailer
+
+    HEADER                      PAYLOAD TRAILER
+    0         2   3   4         6       646       648
+    0x88 0x33 CMD RLE SZLO SZHI DATA    CKLO CKHI 0x00 0x00
+
+    CMD: Game Boy Printer command
+        0x01 > INITIALIZE (Prepare printer for transfer)
+        0x02 > PRINT (Print transferred data)
+        0x04 > TRANSFER (Send image data)
+        0x0F > REPORT (Get Printer status)
+    
+    RLE: Set to either 0x00 or 0x01. Indicates if RLE encoding compression is
+         used in the payload
+    
+    SZLO & SZHI: little endian uint16_t. Indicates payload size
+
+    DATA: Packet payload. Its significance varies depending on command
+
+    CHKLO & CHKHI: little endian uint16_t. Checksum calculated by adding together
+                   packet data from byte 2 (CMD) to the end of PAYLOAD
+
+    The first 2 bytes are sync bytes. The last 2 bytes are employed to read the
+    printer status. Every time you send a byte, the printer will reply, but only
+    the response on the last 2 bytes of the packet will return information
+    about the printer status.
+
+#### GBC_INITIALIZE
+0x88 0x33 0x01 0x00 SIZE DATA CKSM 0x00 0x00
+
 
 ### Tests
 There is a test suite for the firmware, that mocks the Arduino Library. To build
