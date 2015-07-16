@@ -45,7 +45,8 @@ Boy Printer, or my Game Link cable. So far it has worked quite well, and with
 some soldering it would be easy to attach the jumper cables directly to
 the board for a more permanent setup.
 
-TODO: Post an image of the cabled wormlight board and rest of cabling
+![Cable setup](doc/cable_setup1.jpg)
+![Cable setup detail](doc/cable_setup2.jpg)
 
 
 ### Go Client
@@ -108,13 +109,6 @@ This GBPrinter driver is designed as 2 state machines working in conjuction.
 The main state machine controls the flow of data PC-Arduino, while the secondary
 deals with the communication Arduino-Printer.
 
-### Communicatin protocol
-
-
-### States
-
-### Error codes
-
 ### Package format
 - 6 bytes header
 - up to 640 bytes of payload
@@ -145,9 +139,62 @@ deals with the communication Arduino-Printer.
     the response on the last 2 bytes of the packet will return information
     about the printer status.
 
-#### GBC_INITIALIZE
-0x88 0x33 0x01 0x00 SIZE DATA CKSM 0x00 0x00
+#### INITIALIZE
 
+    CMD: 0x01
+    RLE: 0x00
+    SIZE: 0x0000
+    DATA: None
+
+    Expected response: 0x8100 or 0x8108
+
+One of this packages must be sent before transferring data to the printer
+
+#### PRINT
+
+    CMD: 0x02
+    RLE: 0x00
+    SIZE: 0x0400
+    DATA: 0x01 0x00 0xE4 0x40
+
+First data byte purpose is unknown. 2nd indicates margin. First 4 bytes
+for top margin, last 4 for bottom. 3rd and 4th byte indicate palette and
+contrast. These are the default values usually employed.
+
+#### TRANSFER
+
+    CMD: 0x04
+    RLE: 0x00
+    SIZE: Up to 640 bytes
+    DATA: Image buffer
+
+    Expected response: 0x8100 or 0x8108
+
+The printer can accept as much as 9 transfers of size 640bytes before
+fully loading its internal buffer.
+
+#### REPORT
+
+    CMD: 0x0F
+    RLE: 0x00
+    SIZE: 0x0000
+    DATA: None
+
+This will return the Printer status. A report command can be sent during
+any phase of the printing process. It's especially useful to ping the
+printer to detect whenver the printer has finished the printing task.
+
+### Error codes
+The last bit of the Printer status code has the following flag system:
+
+- b0: Bad Checksum
+- b1: Currently printing
+- b2: Printing requested
+- b3: Ready to print
+- b4: Voltage too low
+- b5: ????
+- b6: Paper jam
+- b7: Too hot / cold
 
 ### Tests
 There is a test suite for the firmware, that mocks the Arduino Library. To build
