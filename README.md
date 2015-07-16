@@ -104,6 +104,7 @@ A list of references I've used throughout the project:
 - [Miles Burton wiki](http://milesburton.com/Gameboy_Printer_with_Arduino)
 
 
+## Arduino
 ### Overall design
 This GBPrinter driver is designed as 2 state machines working in conjuction.
 The main state machine controls the flow of data PC-Arduino, while the secondary
@@ -194,7 +195,7 @@ The last bit of the Printer status code has the following flag system:
 - b4: Voltage too low
 - b5: ????
 - b6: Paper jam
-- b7: Too hot / cold
+- b7: Too hot or cold
 
 ### Tests
 There is a test suite for the firmware, that mocks the Arduino Library. To build
