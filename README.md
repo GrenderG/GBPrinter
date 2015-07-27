@@ -111,9 +111,12 @@ The main state machine controls the flow of data PC-Arduino, while the secondary
 deals with the communication Arduino-Printer.
 
 ### Package format
+
 - 6 bytes header
 - up to 640 bytes of payload
-- 4 bytes trailer
+- 4 bytes trailer  
+
+<!-- break -->
 
     HEADER                      PAYLOAD TRAILER
     0         2   3   4         6       646       648
